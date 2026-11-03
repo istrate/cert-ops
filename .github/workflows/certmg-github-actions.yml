@@ -11,17 +11,17 @@ jobs:
       - uses: actions/checkout@v6
       - name: Generate certificates using openssl
         run: |
-          echo "Where are we?"
-          pwd
-          ls -al /home/runner/work
-          ls -al /home/runner/work/cert-ops
-          tree /home/runner/work
-          echo "Check if openssl is installed"
+          echo -e "\033[32mCheck if openssl is installed\033[0m"
           openssl version
 
           # create the certificate and key using openssl
+          echo -e "\033[32mCreate the certificate and key using openssl\033[0m"
           sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout tls.key -out tls.crt -config certificate.conf
           
           #view the certificate to verify it:
+          echo -e "\033[32mView the certificate to verify it\033[0m"
           cat tls.crt | openssl x509 -text
-
+      
+      - name: Check if files still exist around
+        run: |
+          ls -al 
