@@ -9,6 +9,8 @@ jobs:
         run: |
           echo "Where are we?"
           pwd
-          ls -al
+          ls -al /home/runner/work
+          ls -al /home/runner/work/cert-ops
+          tree /home/runner/work
           echo "Check if openssl is installed"
           openssl version
