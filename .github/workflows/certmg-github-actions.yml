@@ -4,9 +4,6 @@ on: [push]
 jobs:
   generate-certificates:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./scripts
     steps:
       - name: Generate certificates using openssl
         run: |
