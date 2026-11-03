@@ -4,6 +4,9 @@ on: [push]
 jobs:
   generate-certificates:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./certs
     steps:
       - uses: actions/checkout@v6
       - name: Generate certificates using openssl
@@ -15,3 +18,10 @@ jobs:
           tree /home/runner/work
           echo "Check if openssl is installed"
           openssl version
+
+          # create the certificate and key using openssl
+          sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout tls.key -out tls.crt -config certificate.conf
+          
+          #view the certificate to verify it:
+          cat tls.crt | openssl x509 -text
+
