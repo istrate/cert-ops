@@ -5,6 +5,7 @@ jobs:
   generate-certificates:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v6
       - name: Generate certificates using openssl
         run: |
           echo "Where are we?"
