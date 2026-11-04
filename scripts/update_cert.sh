@@ -18,7 +18,7 @@ INSTANCE_ID="${INSTANCE_ID:-dev}"
 WORKSPACE_ID="${WORKSPACE_ID:-dev}"
 
 # Path to the directory containing your certificate files
-CERT_DIR="$(pwd)"
+CERT_DIR="/home/runner/work/cert-ops/cert-ops/certs"
 
 # Target Namespace for MAS Core
 NAMESPACE="mas-${INSTANCE_ID}-core"
