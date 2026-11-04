@@ -23,6 +23,9 @@ CERT_DIR="/home/runner/work/cert-ops/cert-ops/certs"
 # Target Namespace for MAS Core
 NAMESPACE="mas-${INSTANCE_ID}-core"
 
+# Target Namespace for MAS Manage
+NAMESPACE_MANAGE="mas-${INSTANCE_ID}-manage"
+
 # Secret Names based on MAS naming conventions
 SECRET_CORE="${INSTANCE_ID}-cert-public"
 SECRET_WORKSPACE="${INSTANCE_ID}-${WORKSPACE_ID}-cert-public-81"
@@ -61,9 +64,9 @@ oc set data secret/"$SECRET_CORE" \
   --from-file=ca.crt="$CA_CRT"
 
 # 2. Update Workspace Public Certificate Secret
-log_info "==> Updating existing workspace secret: $SECRET_WORKSPACE in namespace $NAMESPACE..."
+log_info "==> Updating existing workspace secret: $SECRET_WORKSPACE in namespace $NAMESPACE_MANAGE..."
 oc set data secret/"$SECRET_WORKSPACE" \
-  --namespace="$NAMESPACE" \
+  --namespace="$NAMESPACE_MAANGE" \
   --from-file=tls.crt="$TLS_CRT" \
   --from-file=tls.key="$TLS_KEY" \
   --from-file=ca.crt="$CA_CRT"
