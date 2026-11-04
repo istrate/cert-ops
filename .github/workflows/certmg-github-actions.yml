@@ -20,7 +20,8 @@ jobs:
 
       - name: Generate certificates using openssl
         run: |
-          chmod +x ../gen_cert.sh; ../gen_cert.sh
+          tree /home/runner/work
+          chmod +x ../scripts/gen_cert.sh; ../scripts/gen_cert.sh
           
       - name: Check if files still exist around
         run: |
