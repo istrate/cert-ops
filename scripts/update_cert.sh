@@ -35,6 +35,8 @@ CA_CRT="${CERT_DIR}/ca.crt"
 # ==========================================
 # VALIDATION
 # ==========================================
+pwd
+ls -al
 log_info"==> Validating certificate files in '${CERT_DIR}'..."
 ls -al
 for file in "$TLS_CRT" "$TLS_KEY" "$CA_CRT"; do
