@@ -44,7 +44,7 @@ for file in "$TLS_CRT" "$TLS_KEY" "$CA_CRT"; do
 done
 
 log_info "==> Target Namespace: $NAMESPACE"
-log_info"==> Instance ID: $INSTANCE_ID"
+log_info "==> Instance ID: $INSTANCE_ID"
 log_info "==> Workspace ID: $WORKSPACE_ID"
 log_info ""
 
