@@ -35,7 +35,7 @@ CA_CRT="ca.crt"
 # ==========================================
 # VALIDATION
 # ==========================================
-log_info"==> Validating certificate files in $(pwd)..."
+log_info "==> Validating certificate files in $(pwd)..."
 for file in "$TLS_CRT" "$TLS_KEY" "$CA_CRT"; do
   if [ ! -f "$file" ]; then
     log_error "Error: Required file '$file' not found!" >&2
