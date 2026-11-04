@@ -18,7 +18,7 @@ INSTANCE_ID="${INSTANCE_ID:-dev}"
 WORKSPACE_ID="${WORKSPACE_ID:-dev}"
 
 # Path to the directory containing your certificate files
-CERT_DIR="${CERT_DIR:-.}"
+CERT_DIR="${CERT_DIR:-$(pwd)}"
 
 # Target Namespace for MAS Core
 NAMESPACE="mas-${INSTANCE_ID}-core"
