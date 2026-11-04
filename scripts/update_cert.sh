@@ -66,7 +66,7 @@ oc set data secret/"$SECRET_CORE" \
 # 2. Update Workspace Public Certificate Secret
 log_info "==> Updating existing workspace secret: $SECRET_WORKSPACE in namespace $NAMESPACE_MANAGE..."
 oc set data secret/"$SECRET_WORKSPACE" \
-  --namespace="$NAMESPACE_MAANGE" \
+  --namespace="$NAMESPACE_MANAGE" \
   --from-file=tls.crt="$TLS_CRT" \
   --from-file=tls.key="$TLS_KEY" \
   --from-file=ca.crt="$CA_CRT"
