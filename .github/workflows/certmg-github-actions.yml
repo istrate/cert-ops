@@ -20,9 +20,8 @@ jobs:
 
       - name: Generate certificates using openssl
         run: |
-          tree /home/runner/work
           chmod +x ../scripts/gen_cert.sh; ../scripts/gen_cert.sh
           
-      - name: Check if files still exist around
+      - name: Update certificates in OpenShift 
         run: |
-          ls -al 
+          chmod +x ../scripts/update_cert.sh; ../scripts/update_cert.sh
