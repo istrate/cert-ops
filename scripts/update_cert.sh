@@ -28,17 +28,14 @@ SECRET_CORE="${INSTANCE_ID}-cert-public"
 SECRET_WORKSPACE="${INSTANCE_ID}-${WORKSPACE_ID}-cert-public-81"
 
 # Certificate File Paths
-TLS_CRT="${CERT_DIR}/tls.crt"
-TLS_KEY="${CERT_DIR}/tls.key"
-CA_CRT="${CERT_DIR}/ca.crt"
+TLS_CRT="tls.crt"
+TLS_KEY="tls.key"
+CA_CRT="ca.crt"
 
 # ==========================================
 # VALIDATION
 # ==========================================
-pwd
-ls -al
-log_info"==> Validating certificate files in '${CERT_DIR}'..."
-ls -al
+log_info"==> Validating certificate files in $(pwd)..."
 for file in "$TLS_CRT" "$TLS_KEY" "$CA_CRT"; do
   if [ ! -f "$file" ]; then
     log_error "Error: Required file '$file' not found!" >&2
