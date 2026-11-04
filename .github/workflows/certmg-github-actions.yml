@@ -25,3 +25,7 @@ jobs:
       - name: Update certificates in OpenShift 
         run: |
           chmod +x ../scripts/update_cert.sh; ../scripts/update_cert.sh
+
+      - name: Test if new certificates are in routes
+        run: |
+          chmod +x ../scripts/test_cert.sh; ../scripts/test_cert.sh
