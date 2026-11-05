@@ -22,6 +22,8 @@ cert-ops/
 │   ├── certificate.conf              # OpenSSL config (DN, SAN, key usage)
 │   └── README.md                     # Placeholder: output directory for generated certs
 └── scripts/
+    ├── README.md                     # Usage of the scripts, incl. get_sa_token.sh
+    ├── get_sa_token.sh               # Prerequisite: create the ServiceAccount + print its long-lived token
     ├── gen_cert.sh                   # Step 1: generate CA + TLS cert
     ├── update_cert.sh                # Step 2: push certs into OpenShift secrets
     └── test_cert.sh                  # Step 3: verify endpoints serve new cert
