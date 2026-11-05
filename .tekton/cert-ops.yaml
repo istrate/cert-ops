@@ -42,9 +42,15 @@ spec:
           resources:
             requests:
               storage: 100Mi
-    - name: basic-auth
-      secret:
-        secretName: "{{ git_auth_secret }}"
+    # basic-auth is intentionally not bound: the repository is public. PaC only
+    # creates its git auth secret when a provider token is set up, and a missing
+    # secret keeps the git-clone pod in ContainerCreating (MountVolume.SetUp
+    # failed ... secret "pac-gitauth-..." not found).
+    # For a private repository, bind it again (git_auth_secret in double curly
+    # braces is the PaC template variable for the secret name):
+    #   - name: basic-auth
+    #     secret:
+    #       secretName: <git_auth_secret template variable>
   pipelineSpec:
     params:
       - name: repo-url
