@@ -121,6 +121,12 @@ The script also uses `set -e`. Its steps:
 
 ### Step 7 – Configure GitHub secrets and cluster access (prerequisites)
 
+> **Note:** To get the service token without doing the cluster setup by hand, log in with `oc` as a cluster-admin and run [`scripts/get_sa_token.sh`](scripts/get_sa_token.sh). It creates the ServiceAccount and the Roles, then prints the long-lived token. Use the printed token as the `OPENSHIFT_TOKEN` secret. See [`scripts/README.md`](scripts/README.md) for usage and options.
+>
+> ```bash
+> OPENSHIFT_TOKEN=$(./scripts/get_sa_token.sh)
+> ```
+
 1. In the repo, go to *Settings → Secrets and variables → Actions* and add:
    - `OPENSHIFT_SERVER`, the API URL such as `https://api.<cluster>:6443`.
    - `OPENSHIFT_TOKEN`, a token for a ServiceAccount or user.
