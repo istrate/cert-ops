@@ -137,4 +137,5 @@ Defined in `.tekton/cert-ops.yaml` under `pipelineSpec.params`. Edit the default
 | `Permission denied` writing in `certs/` | The pod user does not match the workspace owner. Keep `runAsUser`/`fsGroup` at 65532 |
 | `Error from server (Forbidden)` in `update-certificates` | Step 2 was skipped or used different `INSTANCE_ID`/`WORKSPACE_ID` values. Check with `oc auth can-i patch secret/<name> -n <ns> --as=system:serviceaccount:cert-ops:pipeline` |
 | `git-clone` task not found | Your operator version is older than 1.15. Install the Task in the namespace, or replace the resolver with `hub` |
+| `missing values for these params … [URL]` in `git-clone` | The `git-clone` task in `openshift-pipelines` uses upper-case parameter names (`URL`, `REVISION`, `DELETE_EXISTING`). If your operator version uses lower-case names, check them with `oc get task git-clone -n openshift-pipelines -o jsonpath='{.spec.params[*].name}'` and adjust the `fetch-repository` params |
 | `test-certificates` times out | The operator has not yet deployed the new certificate. Raise `timeout-minutes`, and check that the operator serves exactly the generated `tls.crt` |

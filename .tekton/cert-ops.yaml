@@ -85,11 +85,13 @@ spec:
             - name: namespace
               value: openshift-pipelines
         params:
-          - name: url
+          # The git-clone task in the openshift-pipelines namespace uses
+          # upper-case parameter names
+          - name: URL
             value: $(params.repo-url)
-          - name: revision
+          - name: REVISION
             value: $(params.revision)
-          - name: deleteExisting
+          - name: DELETE_EXISTING
             value: "true"
         workspaces:
           - name: output
