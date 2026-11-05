@@ -3,7 +3,7 @@
 
 ## 1. What the project does
 
-cert-ops automates TLS certificate rotation for an IBM Maximo Application Suite (MAS) deployment on OpenShift. The OpenShift cluster is an IBM TechZone instance. On every push to GitHub, a pipeline does four things:
+cert-ops automates TLS certificate rotation for an IBM Maximo Application Suite (MAS) deployment on OpenShift. On every push (can be changed to PR, to be reviewed before merging) to GitHub, a pipeline does four things:
 
 1. It generates a new CA and a new wildcard server certificate.
 2. It logs in to the OpenShift cluster.
@@ -84,7 +84,7 @@ The outputs are `ca.key`, `ca.crt`, `tls.key`, `tls.csr`, `tls.crt` and `ca.srl`
 The script uses `set -e`, so it stops on the first error. Its steps:
 
 1. **Parameterise MAS naming conventions** with environment-variable defaults:
-   - `INSTANCE_ID` (default `dev`) and `WORKSPACE_ID` (default `dev`).
+   - `INSTANCE_ID` (default `dev`) and `WORKSPACE_ID` (default `dev`). **These can be passed as environment variables on GitHUb Actions**
    - Namespaces: `mas-<instance>-core` and `mas-<instance>-manage`.
    - Secrets: `<instance>-cert-public` (core) and `<instance>-<workspace>-cert-public-81` (Manage workspace).
 2. **Validate** that `tls.crt`, `tls.key` and `ca.crt` exist in the working directory. It exits with an error if any is missing.
@@ -121,15 +121,9 @@ The script also uses `set -e`. Its steps:
 
 ### Step 7 – Configure GitHub secrets and cluster access (prerequisites)
 
-> **Note:** To get the service token without doing the cluster setup by hand, log in with `oc` as a cluster-admin and run [`scripts/get_sa_token.sh`](scripts/get_sa_token.sh). It creates the ServiceAccount and the Roles, then prints the long-lived token. Use the printed token as the `OPENSHIFT_TOKEN` secret. See [`scripts/README.md`](scripts/README.md) for usage and options.
->
-> ```bash
-> OPENSHIFT_TOKEN=$(./scripts/get_sa_token.sh)
-> ```
-
 1. In the repo, go to *Settings → Secrets and variables → Actions* and add:
    - `OPENSHIFT_SERVER`, the API URL such as `https://api.<cluster>:6443`.
-   - `OPENSHIFT_TOKEN`, a token for a ServiceAccount or user.
+   - `OPENSHIFT_TOKEN`, a long lived token for a ServiceAccount or user.
 2. On the cluster, create a ServiceAccount whose Role or RoleBinding allows `get`, `patch` and `update` on secrets. This must cover `mas-<inst>-core` and `mas-<inst>-manage`. Use its token instead of a personal `oc whoami -t` token, which expires.
 3. The target secrets must already exist. `oc set data` fails if they don't.
 4. Update the CN and SANs in `certificate.conf`, the CN in `gen_cert.sh`, and the default `CN` in `test_cert.sh` if you point this at a different cluster.
