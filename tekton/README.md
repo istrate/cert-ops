@@ -125,7 +125,7 @@ Defined in `.tekton/cert-ops.yaml` under `pipelineSpec.params`. Edit the default
 - **Timeout.** The pipeline timeout is 1 hour. The test task alone can use 20 minutes when the operator is slow.
 - **Private keys.** The CA and TLS keys exist only in the per-run PVC. The `finally` task deletes them, and the PVC is removed with the PipelineRun. They are never stored in Git or in a secret. As with GitHub Actions, a new CA is generated on every run.
 - **Pull requests.** The pipeline only runs for pushes to `main`. A pull request would otherwise rotate production certificates. To change this, edit the `on-event` and `on-target-branch` annotations.
-- **Pod security.** The pods run as UID 65532 (allowed by the `pipelines-scc` that the `pipeline` ServiceAccount uses) so that `git-clone` and the script steps can both write to the shared workspace.
+- **Pod security.** The pods run as UID 65532 (allowed by the `pipelines-scc` that the `pipeline` ServiceAccount uses) so that `git-clone` and the script steps use the same user. Do not set `fsGroup` in the `podTemplate`: `pipelines-scc` rejects 65532 as an `fsGroup`, and the pipeline's affinity-assistant pod fails to start with the same value, so every task stays `Pending`. The SCC assigns an allowed `fsGroup` itself.
 - **Cleanup.** PaC keeps the last 5 runs (`max-keep-runs`).
 
 ## Troubleshooting
@@ -134,7 +134,8 @@ Defined in `.tekton/cert-ops.yaml` under `pipelineSpec.params`. Edit the default
 |---|---|
 | Nothing starts after a push | Check the webhook delivery in GitHub and `oc get repository -n cert-ops`. Check that the branch is `main` |
 | `'openssl' is missing in the tools image` | Use another `tools-image` that contains it |
-| `Permission denied` writing in `certs/` | The pod user does not match the workspace owner. Keep `runAsUser`/`fsGroup` at 65532 |
+| `Permission denied` writing in `certs/` | The pod user does not match the workspace owner. Keep `runAsUser` at 65532, and do not set `fsGroup` (see *Pod security*) |
+| All task pods stay `Pending` with `didn't match pod affinity rules` | The `affinity-assistant` StatefulSet cannot create its pod. Run `oc get events -n cert-ops \| grep FailedCreate`. An SCC error on `fsGroup` or `runAsUser` means the `podTemplate` `securityContext` is not allowed. Remove the offending field |
 | `Error from server (Forbidden)` in `update-certificates` | Step 2 was skipped or used different `INSTANCE_ID`/`WORKSPACE_ID` values. Check with `oc auth can-i patch secret/<name> -n <ns> --as=system:serviceaccount:cert-ops:pipeline` |
 | `git-clone` task not found | Your operator version is older than 1.15. Install the Task in the namespace, or replace the resolver with `hub` |
 | `missing values for these params … [URL]` in `git-clone` | The `git-clone` task in `openshift-pipelines` uses upper-case parameter names (`URL`, `REVISION`, `DELETE_EXISTING`). If your operator version uses lower-case names, check them with `oc get task git-clone -n openshift-pipelines -o jsonpath='{.spec.params[*].name}'` and adjust the `fetch-repository` params |

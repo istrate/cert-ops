@@ -25,12 +25,13 @@ spec:
   taskRunTemplate:
     serviceAccountName: pipeline
     podTemplate:
-      # uid 65532 is allowed by the pipelines-scc and is the user of git-clone,
-      # so every task can read and write the shared workspace.
+      # uid 65532 is allowed by the pipelines-scc and is the user of git-clone.
+      # Do NOT set fsGroup here: pipelines-scc rejects 65532 as fsGroup, which
+      # also blocks the affinity-assistant pod and leaves every task Pending.
+      # The SCC assigns an allowed fsGroup, which makes the PVC writable.
       securityContext:
         runAsNonRoot: true
         runAsUser: 65532
-        fsGroup: 65532
   workspaces:
     - name: source
       volumeClaimTemplate:
