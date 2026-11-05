@@ -1,0 +1,24 @@
+# Pipelines as Code Repository CR: links the GitHub repo to the namespace
+# where the PipelineRuns from .tekton/cert-ops.yaml are executed.
+#
+# Needed only for the manual (webhook) setup. `tkn pac create repository`
+# creates the same resource for you. See tekton/README.md.
+#
+# Create the secret first (replace the two <...> values):
+#   oc create secret generic github-webhook-config -n cert-ops \
+#     --from-literal=provider.token=<github-personal-access-token> \
+#     --from-literal=webhook.secret=<random-string>
+apiVersion: pipelinesascode.tekton.dev/v1alpha1
+kind: Repository
+metadata:
+  name: cert-ops
+  namespace: cert-ops
+spec:
+  url: https://github.com/istrate/cert-ops
+  git_provider:
+    secret:
+      name: github-webhook-config
+      key: provider.token
+    webhook_secret:
+      name: github-webhook-config
+      key: webhook.secret

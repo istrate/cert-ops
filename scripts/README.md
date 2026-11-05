@@ -57,6 +57,15 @@ Run the script from any directory. It doesn't use relative paths.
 | `SA_NS` | `cert-ops` | Namespace that holds the ServiceAccount and token secret. |
 | `SA_NAME` | `cert-ops-sa` | ServiceAccount name. |
 | `WAIT_SECONDS` | `30` | How long to wait for the token to be populated. |
+| `CREATE_TOKEN` | `true` | Set to `false` to create only the ServiceAccount and RBAC, with no token. Use it for the Tekton pipeline, which runs in the cluster. |
+
+For the Tekton pipeline, grant the RBAC to the existing `pipeline` ServiceAccount instead of creating a new one:
+
+```bash
+SA_NS=cert-ops SA_NAME=pipeline CREATE_TOKEN=false ./scripts/get_sa_token.sh
+```
+
+See [`../tekton/README.md`](../tekton/README.md).
 
 Keep `INSTANCE_ID` and `WORKSPACE_ID` the same as in `update_cert.sh`.
 

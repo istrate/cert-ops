@@ -16,8 +16,13 @@ cert-ops automates TLS certificate rotation for an IBM Maximo Application Suite 
 cert-ops/
 ├── README.md                         # This guide + workflow status badge
 ├── .github/workflows/
-│   ├── certmg-github-actions.yml     # The CI/CD pipeline (orchestrator)
+│   ├── certmg-github-actions.yml     # The CI/CD pipeline (orchestrator) for GitHub Actions
 │   └── README.md                     # Placeholder: "cert-management flow"
+├── .tekton/
+│   └── cert-ops.yaml                 # The same pipeline as a Tekton PipelineRun (Pipelines as Code)
+├── tekton/
+│   ├── README.md                     # Setup guide for OpenShift Pipelines
+│   └── repository.yaml               # Pipelines as Code Repository CR
 ├── certs/
 │   ├── certificate.conf              # OpenSSL config (DN, SAN, key usage)
 │   └── README.md                     # Placeholder: output directory for generated certs
@@ -33,9 +38,9 @@ The design separates three concerns:
 
 - **Configuration** is in `certs/`.
 - **Logic** is in `scripts/`.
-- **Orchestration** is in `.github/workflows/`.
+- **Orchestration** is in `.github/workflows/` (GitHub Actions) or `.tekton/` (Tekton, Pipelines as Code).
 
-The scripts are plain Bash, so you can run them locally or from any other CI system.
+The scripts are plain Bash, so you can run them locally or from any other CI system. The two pipeline definitions call the same scripts, so they behave the same way. **Run only one of them** against the same cluster. See [Running on OpenShift Pipelines (Tekton)](#6-running-on-openshift-pipelines-tekton).
 
 ## 3. Flow overview
 
@@ -135,4 +140,29 @@ The script also uses `set -e`. Its steps:
 
 1. Push a commit. The workflow runs and the README badge shows pass or fail.
 2. Read the logs. They print the OpenSSL text dump, `Successfully updated both existing secrets…`, and the per-endpoint PASSED lines.
+
+## 6. Running on OpenShift Pipelines (Tekton)
+
+The same rotation can run inside the cluster with OpenShift Pipelines and Pipelines as Code. The pipeline is defined in [`.tekton/cert-ops.yaml`](.tekton/cert-ops.yaml) and runs the same three scripts as the GitHub workflow.
+
+| | GitHub Actions | Tekton (PaC) |
+|---|---|---|
+| Definition | `.github/workflows/certmg-github-actions.yml` | `.tekton/cert-ops.yaml` |
+| Runs on | GitHub-hosted runner | Pods in the cluster |
+| Cluster access | `oc login` with `OPENSHIFT_SERVER` and `OPENSHIFT_TOKEN` secrets | The `pipeline` ServiceAccount of the pod. No token is exported |
+| Trigger | `on: [push]` | Push to `main` |
+
+Quick start:
+
+```bash
+oc new-project cert-ops
+
+# Least-privilege access for the 'pipeline' ServiceAccount, no token needed
+SA_NS=cert-ops SA_NAME=pipeline CREATE_TOKEN=false ./scripts/get_sa_token.sh
+
+# Connect the GitHub repo (creates the Repository CR and webhook)
+tkn pac create repository
+```
+
+Then push to `main`. Do not leave both pipelines enabled: they would each rotate the certificates on every push. Disable the GitHub workflow first (*Actions → Disable workflow*). The full guide, parameters and troubleshooting are in [`tekton/README.md`](tekton/README.md).
 

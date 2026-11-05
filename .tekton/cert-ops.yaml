@@ -1,0 +1,242 @@
+# Pipelines as Code (OpenShift Pipelines) equivalent of
+# .github/workflows/certmg-github-actions.yml
+#
+# It reuses the very same scripts in ./scripts, so both CI systems behave alike.
+# Inside the cluster no `oc login` is needed: `oc` uses the token of the
+# `pipeline` ServiceAccount that runs the pods (see tekton/README.md).
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  generateName: cert-ops-
+  annotations:
+    # Same trigger as the GitHub workflow: push to main
+    pipelinesascode.tekton.dev/on-event: "[push]"
+    pipelinesascode.tekton.dev/on-target-branch: "[main]"
+    pipelinesascode.tekton.dev/max-keep-runs: "5"
+spec:
+  params:
+    - name: repo-url
+      value: "{{ repo_url }}"
+    - name: revision
+      value: "{{ revision }}"
+  # The retry loop in test_cert.sh can take up to 20 minutes
+  timeouts:
+    pipeline: 1h
+  taskRunTemplate:
+    serviceAccountName: pipeline
+    podTemplate:
+      # uid 65532 is allowed by the pipelines-scc and is the user of git-clone,
+      # so every task can read and write the shared workspace.
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        fsGroup: 65532
+  workspaces:
+    - name: source
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 100Mi
+    - name: basic-auth
+      secret:
+        secretName: "{{ git_auth_secret }}"
+  pipelineSpec:
+    params:
+      - name: repo-url
+        type: string
+      - name: revision
+        type: string
+      - name: instance-id
+        type: string
+        default: dev
+      - name: workspace-id
+        type: string
+        default: dev
+      - name: cn
+        type: string
+        description: Base domain of the cluster routes (without the leading *.)
+        default: apps.itz-83pcr7.hub04-lb.techzone.ibm.com
+      - name: timeout-minutes
+        type: string
+        default: "20"
+      - name: retry-delay-seconds
+        type: string
+        default: "180"
+      - name: tools-image
+        type: string
+        description: Image that provides bash, openssl, oc, awk and grep
+        default: image-registry.openshift-image-registry.svc:5000/openshift/cli:latest
+    workspaces:
+      - name: source
+      - name: basic-auth
+        optional: true
+    tasks:
+      - name: fetch-repository
+        taskRef:
+          resolver: cluster
+          params:
+            - name: kind
+              value: task
+            - name: name
+              value: git-clone
+            - name: namespace
+              value: openshift-pipelines
+        params:
+          - name: url
+            value: $(params.repo-url)
+          - name: revision
+            value: $(params.revision)
+          - name: deleteExisting
+            value: "true"
+        workspaces:
+          - name: output
+            workspace: source
+          - name: basic-auth
+            workspace: basic-auth
+
+      - name: generate-certificates
+        runAfter: [fetch-repository]
+        workspaces:
+          - name: source
+            workspace: source
+        taskSpec:
+          workspaces:
+            - name: source
+          steps:
+            - name: gen-cert
+              image: $(params.tools-image)
+              workingDir: $(workspaces.source.path)/certs
+              env:
+                - name: HOME
+                  value: /tmp
+              script: |
+                #!/bin/bash
+                set -euo pipefail
+                for tool in bash openssl; do
+                  command -v "$tool" >/dev/null || { echo "'$tool' is missing in the tools image"; exit 1; }
+                done
+                bash ../scripts/gen_cert.sh
+                # gen_cert.sh has no set -e, so make sure the outputs exist
+                for f in ca.crt ca.key tls.crt tls.key; do
+                  [ -s "$f" ] || { echo "Expected file '$f' was not generated"; exit 1; }
+                done
+          params:
+            - name: tools-image
+        params:
+          - name: tools-image
+            value: $(params.tools-image)
+
+      - name: update-certificates
+        runAfter: [generate-certificates]
+        workspaces:
+          - name: source
+            workspace: source
+        taskSpec:
+          workspaces:
+            - name: source
+          params:
+            - name: instance-id
+            - name: workspace-id
+            - name: tools-image
+          steps:
+            - name: update-cert
+              image: $(params.tools-image)
+              workingDir: $(workspaces.source.path)/certs
+              env:
+                - name: HOME
+                  value: /tmp
+                - name: INSTANCE_ID
+                  value: $(params.instance-id)
+                - name: WORKSPACE_ID
+                  value: $(params.workspace-id)
+              script: |
+                #!/bin/bash
+                set -euo pipefail
+                command -v oc >/dev/null || { echo "'oc' is missing in the tools image"; exit 1; }
+                bash ../scripts/update_cert.sh
+        params:
+          - name: instance-id
+            value: $(params.instance-id)
+          - name: workspace-id
+            value: $(params.workspace-id)
+          - name: tools-image
+            value: $(params.tools-image)
+
+      - name: test-certificates
+        runAfter: [update-certificates]
+        workspaces:
+          - name: source
+            workspace: source
+        taskSpec:
+          workspaces:
+            - name: source
+          params:
+            - name: instance-id
+            - name: workspace-id
+            - name: cn
+            - name: timeout-minutes
+            - name: retry-delay-seconds
+            - name: tools-image
+          steps:
+            - name: test-cert
+              image: $(params.tools-image)
+              workingDir: $(workspaces.source.path)/certs
+              env:
+                - name: HOME
+                  value: /tmp
+                - name: INSTANCE_ID
+                  value: $(params.instance-id)
+                - name: WORKSPACE_ID
+                  value: $(params.workspace-id)
+                - name: CN
+                  value: $(params.cn)
+                - name: TIMEOUT_MINUTES
+                  value: $(params.timeout-minutes)
+                - name: RETRY_DELAY_SECONDS
+                  value: $(params.retry-delay-seconds)
+              script: |
+                #!/bin/bash
+                set -euo pipefail
+                for tool in openssl awk grep; do
+                  command -v "$tool" >/dev/null || { echo "'$tool' is missing in the tools image"; exit 1; }
+                done
+                bash ../scripts/test_cert.sh
+        params:
+          - name: instance-id
+            value: $(params.instance-id)
+          - name: workspace-id
+            value: $(params.workspace-id)
+          - name: cn
+            value: $(params.cn)
+          - name: timeout-minutes
+            value: $(params.timeout-minutes)
+          - name: retry-delay-seconds
+            value: $(params.retry-delay-seconds)
+          - name: tools-image
+            value: $(params.tools-image)
+
+    finally:
+      # Always remove the private keys from the workspace, even if a task failed
+      - name: cleanup-private-keys
+        workspaces:
+          - name: source
+            workspace: source
+        taskSpec:
+          workspaces:
+            - name: source
+          params:
+            - name: tools-image
+          steps:
+            - name: remove-keys
+              image: $(params.tools-image)
+              workingDir: $(workspaces.source.path)/certs
+              script: |
+                #!/bin/bash
+                rm -f ca.key tls.key tls.csr ca.srl
+                echo "Private keys removed from the workspace"
+        params:
+          - name: tools-image
+            value: $(params.tools-image)

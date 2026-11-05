@@ -8,6 +8,11 @@
 #
 # Prerequisite: `oc` is logged in as a user allowed to create namespaces,
 # ServiceAccounts, Roles and RoleBindings (e.g. cluster-admin).
+#
+# For the Tekton pipeline (runs inside the cluster, no token needed), grant the
+# `pipeline` ServiceAccount of the namespace that runs the PipelineRuns the
+# same least-privilege RBAC and skip the token:
+#   SA_NS=cert-ops SA_NAME=pipeline CREATE_TOKEN=false ./get_sa_token.sh
 
 set -euo pipefail
 
@@ -37,6 +42,9 @@ CORE_SECRET="${INSTANCE_ID}-cert-public"
 WS_SECRET="${INSTANCE_ID}-${WORKSPACE_ID}-cert-public-81"
 
 WAIT_SECONDS="${WAIT_SECONDS:-30}"
+
+# Set to "false" to only create the ServiceAccount and RBAC (no token secret)
+CREATE_TOKEN="${CREATE_TOKEN:-true}"
 
 # ==========================================
 # VALIDATION
@@ -141,6 +149,11 @@ if [ "$(oc auth can-i patch "secret/${CORE_SECRET}" -n "$CORE_NS" --as="$SA_USER
    [ "$(oc auth can-i patch "secret/${WS_SECRET}" -n "$MANAGE_NS" --as="$SA_USER")" != "yes" ]; then
   log_error "ServiceAccount cannot patch the target secrets"
   exit 1
+fi
+
+if [ "$CREATE_TOKEN" = "false" ]; then
+  log_info "==> CREATE_TOKEN=false: ServiceAccount $SA_USER is ready, no token created."
+  exit 0
 fi
 
 # ==========================================
