@@ -106,8 +106,9 @@ The script also uses `set -e`. Its steps:
    - Core API: `https://api.<inst>.<CN>`
 2. `extract_host` pulls the hostname from each URL with `awk -F/`.
 3. `test_endpoint_ssl` runs `echo | openssl s_client -connect host:443 -servername host`. This is a real TLS handshake with SNI.
-4. If the output contains `BEGIN CERTIFICATE`, it prints the subject, issuer and validity dates and reports PASSED. Otherwise it logs an error and returns 1, which fails the CI job.
-5. Chain validation errors are deliberately ignored (`|| true`). The CA is private, so the test only proves that a certificate is served.
+4. If the output contains `BEGIN CERTIFICATE`, it prints the subject, issuer, validity dates and SHA-256 fingerprint. It reports PASSED only if the fingerprint matches the newly generated `tls.crt`. Otherwise it returns 1.
+5. Chain validation errors are deliberately ignored (`|| true`). The CA is private, so the test compares fingerprints instead of validating the chain.
+6. **Retry.** The operator takes time to replace the certificates, so a failed attempt is not final. The script retests the failing endpoints every 3 minutes (`RETRY_DELAY_SECONDS=180`) for up to 20 minutes (`TIMEOUT_MINUTES=20`). Endpoints that already passed are not tested again. If any endpoint is still failing at the timeout, it exits with 1 and fails the CI job. Both values can be overridden with environment variables.
 
 ### Step 6 – Wire it together in GitHub Actions ([`certmg-github-actions.yml`](.github/workflows/certmg-github-actions.yml))
 
