@@ -133,17 +133,3 @@ The script also uses `set -e`. Its steps:
 1. Push a commit. The workflow runs and the README badge shows pass or fail.
 2. Read the logs. They print the OpenSSL text dump, `Successfully updated both existing secrets…`, and the per-endpoint PASSED lines.
 
-## 5. Known issues and suggested improvements
-
-| Area | Observation | Recommendation |
-|---|---|---|
-| Trigger | `on: [push]` rotates production certs on every push, including doc edits. | Use `workflow_dispatch` plus a `schedule` cron (e.g. every 60 days), or filter on `paths:`. |
-| Secrets handling | The CA key and server key are created on the runner and never uploaded. This is good, but a new CA is made on each run, so clients that trusted the old CA break. | Keep a persistent CA in a secret store (Vault or GitHub Secrets) and issue only leaf certs. Alternatively, use cert-manager or a real CA. |
-| `gen_cert.sh` | There is no `set -e`, so a failed `openssl` call doesn't stop the script. The CA subject is a wildcard CN with no CA extensions. | Add `set -euo pipefail`. Give the CA a proper CN and `basicConstraints=CA:TRUE`. |
-| `update_cert.sh` | `CERT_DIR` is defined with a hardcoded runner path but never used. | Remove it, or use it. |
-| Timing | The test runs right after the update, but routes and pods may need time to reload. | Add `oc rollout status` or a retry loop in `test_cert.sh`. |
-| `test_cert.sh` | It only checks that a certificate is served. It doesn't compare it to the newly generated one. | Compare fingerprints (`openssl x509 -fingerprint`) with `tls.crt`. |
-| Config duplication | The cluster domain appears in three files. | Move it to one variable (workflow `env:` or a GitHub variable). |
-| Docs and typos | Both sub-READMEs are one-line placeholders, and the workflow `run-name` says "certifcate". | Document the flow, prerequisites and secrets. Fix the typo. |
-| Validity | Certificates last 365 days with no expiry monitoring. | Add a scheduled expiry check. |
-| `oc login` | There is no `--insecure-skip-tls-verify` option or CA handling. Self-signed API certs will fail. | Add it only if the cluster needs it. |
